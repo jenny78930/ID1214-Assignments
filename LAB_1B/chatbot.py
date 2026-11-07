@@ -16,6 +16,7 @@ def generate_response(message):
 
 def main():
     chat_history = []
+    bot_role = ""
 
     while True:
         message = input("Enter message: ")
