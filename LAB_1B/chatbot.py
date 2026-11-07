@@ -7,17 +7,22 @@ model = AutoModelForSeq2SeqLM.from_pretrained(
     device_map="auto"
 )
 
-instructions = """You role is a geographic expert.
+instructions = """ Use this information to answer:
+            You role is a geographic expert and you love geography.
             Answer questions about capital cities accurately.
             Use the conversation history when answering follow-up questions.
             Keep your answers short and clear.
             The capital city of Sweden is Stockholm. Stockholm is in Sweden.
-            The capital city of France is Paris. Paris is in France."""
+            The capital city of France is Paris. Paris is in France.
+            If you dont have information to answer the question, respond with "No bitch." """
 
 def generate_response(message, chat_history):
     chat_history_str = ""
 
     for previous_message, response in chat_history[-2:]:
+        if response == "No bitch.":
+            continue
+
         chat_history_str +=  (
             f"User: {previous_message}\n"
             f"Assistant: {response}\n"
@@ -36,7 +41,7 @@ def generate_response(message, chat_history):
 
 
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    outputs = model.generate(**inputs, max_new_tokens=100)
+    outputs = model.generate(**inputs, max_new_tokens=100, do_sample=True, temperature=0.3, top_k=5)
 
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return response
@@ -47,15 +52,13 @@ def main():
     while True:
         message = input("Enter message: ")
 
-        print(chat_history)
-
         if message.lower() == "quit":
             break
 
         response = generate_response(message, chat_history)
 
         chat_history.append((message, response))
-
+        print(chat_history)
         print(f"Bot: {response}")
 
 main()
