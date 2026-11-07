@@ -7,41 +7,60 @@ model = AutoModelForSeq2SeqLM.from_pretrained(
     device_map="auto"
 )
 
-instructions = """ Use this information to answer:
-            You role is a geographic expert and you love geography.
-            Answer questions about capital cities accurately.
-            Use the conversation history when answering follow-up questions.
-            Keep your answers short and clear.
-            The capital city of Sweden is Stockholm. Stockholm is in Sweden.
-            The capital city of France is Paris. Paris is in France.
-            If you dont have information to answer the question, respond with "No bitch." """
+instructions = """If the answer is not in the facts, answer 'I do not know.'. Otherwise, answer using the facts below."""
+
+facts = {
+    "role": "I am a geography expert.",
+    "sweden": "The capital city of Sweden is Stockholm. Stockholm is in Sweden.",
+    "france": "The capital city of France is Paris. Paris is in France.",
+    "china": "The capital city of China is Beijing. Beijing is in China.",
+}
+
+aliases = {"stockholm": "sweden", "paris": "france", "beijing": "china"}
+
+def find_places(text):
+    text = text.lower()
+    places = []
+    for name in list(facts) + list(aliases):
+        if name in text:
+            place = aliases.get(name, name)
+            if place not in places:
+                places.append(place)
+    return places
 
 def generate_response(message, chat_history):
     chat_history_str = ""
 
+    # Build conversation history string, skip previous responses that start with "Sorry"
     for previous_message, response in chat_history[-2:]:
-        if response == "No bitch.":
+        if response.startswith("Sorry"):
             continue
 
         chat_history_str +=  (
-            f"User: {previous_message}\n"
-            f"Assistant: {response}\n"
+            f"Question: {previous_message}\n"
+            f"Answer: {response}\n"
         )
+
+    places = find_places(message)
+    if places:
+        retrieved_facts = " ".join(facts[place] for place in places)
+    else:
+        retrieved_facts = " ".join(facts[place] for place in facts)
 
     prompt = f"""
     Instructions:
-    {instructions}
+    {instructions + "\nFacts:" + retrieved_facts}
 
     Conversation history:
     {chat_history_str}
 
-    User: {message}
-    Assistant:
+    Question: {message}
+    Answer:
     """
 
 
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    outputs = model.generate(**inputs, max_new_tokens=100, do_sample=True, temperature=0.3, top_k=5)
+    outputs = model.generate(**inputs, max_new_tokens=100, do_sample=False)
 
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return response
@@ -58,7 +77,6 @@ def main():
         response = generate_response(message, chat_history)
 
         chat_history.append((message, response))
-        print(chat_history)
         print(f"Bot: {response}")
 
 main()

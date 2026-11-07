@@ -12,16 +12,16 @@ def generate_response(message, chat_history):
 
     for previous_message, response in chat_history[-2:]:
         chat_history_str +=  (
-            f"User: {previous_message}\n"
-            f"Assistant: {response}\n"
+            f"Question: {previous_message}\n"
+            f"Answer: {response}\n"
         )
 
     prompt = f"""
     Conversation history:
     {chat_history_str}
 
-    User: {message}
-    Assistant:
+    Question: {message}
+    Answer:
     """
 
 
