@@ -18,15 +18,16 @@ facts = {
 
 aliases = {"stockholm": "sweden", "paris": "france", "beijing": "china"}
 
-def find_places(text):
+# Extract facts keywords from text
+def find_topics(text):
     text = text.lower()
-    places = []
-    for name in list(facts) + list(aliases):
-        if name in text:
-            place = aliases.get(name, name)
-            if place not in places:
-                places.append(place)
-    return places
+    topics = []
+    for keyword in list(facts) + list(aliases):
+        if keyword in text:
+            topic = aliases.get(keyword, keyword)
+            if topic not in topics:
+                topics.append(topic)
+    return topics
 
 def generate_response(message, chat_history):
     chat_history_str = ""
@@ -41,11 +42,13 @@ def generate_response(message, chat_history):
             f"Answer: {response}\n"
         )
 
-    places = find_places(message)
-    if places:
-        retrieved_facts = " ".join(facts[place] for place in places)
+    topics = find_topics(message)
+
+    # If message contains topics in facts, retrieve the corresponding facts. Otherwise, retrieve all facts.
+    if topics:
+        retrieved_facts = " ".join(facts[topic] for topic in topics)
     else:
-        retrieved_facts = " ".join(facts[place] for place in facts)
+        retrieved_facts = " ".join(facts[topic] for topic in facts)
 
     prompt = f"""
     Instructions:
