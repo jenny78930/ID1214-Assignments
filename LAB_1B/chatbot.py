@@ -7,7 +7,7 @@ model = AutoModelForSeq2SeqLM.from_pretrained(
     device_map="auto"
 )
 
-instructions = """If the answer is not in the facts, answer 'Sorry, I do not know.'. Otherwise, answer using the facts below."""
+instructions = """If the answer is not in the facts, answer 'I do not know.'. Otherwise, answer using the facts below."""
 
 facts = {
     "role": "I am a geography expert.",
@@ -32,9 +32,9 @@ def find_topics(text):
 def generate_response(message, chat_history):
     chat_history_str = ""
 
-    # Build conversation history string, skip previous responses that start with "Sorry"
-    for previous_message, response in chat_history[-1:]:
-        if response.startswith("Sorry"):
+    # Build conversation history string, skip previous responses that start with "I do not know"
+    for previous_message, response in chat_history[-2:]:
+        if response.startswith("I do not know"):
             continue
 
         chat_history_str +=  (
